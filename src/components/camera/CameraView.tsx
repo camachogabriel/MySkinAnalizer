@@ -2,10 +2,10 @@ import { forwardRef } from 'react';
 
 interface CameraViewProps {
   isReady: boolean;
+  mirror?: boolean;
 }
 
-// MySkinAnalyzer — contenedor del <video> de cámara en vivo.
-const CameraView = forwardRef<HTMLVideoElement, CameraViewProps>(({ isReady }, ref) => {
+const CameraView = forwardRef<HTMLVideoElement, CameraViewProps>(({ isReady, mirror = false }, ref) => {
   return (
     <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 4', overflow: 'hidden', borderRadius: 16, background: '#000' }}>
       <video
@@ -13,7 +13,13 @@ const CameraView = forwardRef<HTMLVideoElement, CameraViewProps>(({ isReady }, r
         autoPlay
         playsInline
         muted
-        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isReady ? 1 : 0.3, transform: 'scaleX(-1)' }}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          opacity: isReady ? 1 : 0.3,
+          transform: mirror ? 'scaleX(-1)' : 'none'
+        }}
       />
     </div>
   );

@@ -6,11 +6,10 @@ interface FaceGuideOverlayProps {
   height: number;
   landmarks: NormalizedLandmark[] | null;
   isValidPosition: boolean;
+  mirror?: boolean;
 }
 
-// MySkinAnalyzer — dibuja la silueta guía fija y el contorno de landmarks
-// detectado en tiempo real sobre un canvas transparente encima del video.
-export default function FaceGuideOverlay({ width, height, landmarks, isValidPosition }: FaceGuideOverlayProps) {
+export default function FaceGuideOverlay({ width, height, landmarks, isValidPosition, mirror = false }: FaceGuideOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -21,7 +20,6 @@ export default function FaceGuideOverlay({ width, height, landmarks, isValidPosi
 
     ctx.clearRect(0, 0, width, height);
 
-    // Óvalo guía fijo: proporción estándar de rostro centrada en el frame.
     const cx = width / 2;
     const cy = height / 2;
     const rx = width * 0.28;
@@ -35,7 +33,6 @@ export default function FaceGuideOverlay({ width, height, landmarks, isValidPosi
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Línea de referencia de altura de ojos.
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -43,7 +40,6 @@ export default function FaceGuideOverlay({ width, height, landmarks, isValidPosi
     ctx.lineTo(cx + rx, cy - ry * 0.15);
     ctx.stroke();
 
-    // Contorno de landmarks detectado (verde si válido, rojo si no).
     if (landmarks && landmarks.length > 0) {
       ctx.strokeStyle = isValidPosition ? '#16A34A' : '#DC2626';
       ctx.lineWidth = 2;
@@ -52,7 +48,7 @@ export default function FaceGuideOverlay({ width, height, landmarks, isValidPosi
       faceOvalIndices.forEach((idx, i) => {
         const p = landmarks[idx];
         if (!p) return;
-        const x = p.x * width;
+        const x = mirror ? (1 - p.x) * width : p.x * width;
         const y = p.y * height;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
@@ -60,7 +56,7 @@ export default function FaceGuideOverlay({ width, height, landmarks, isValidPosi
       ctx.closePath();
       ctx.stroke();
     }
-  }, [width, height, landmarks, isValidPosition]);
+  }, [width, height, landmarks, isValidPosition, mirror]);
 
   return (
     <canvas
