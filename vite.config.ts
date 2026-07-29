@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // MySkinAnalyzer — Vite config
 // worker format 'es' es necesario para poder usar import dinámico de OpenCV.js dentro del Web Worker.
 export default defineConfig({
+  base: '/MySkinAnalizer/',
   plugins: [
     react(),
     VitePWA({
