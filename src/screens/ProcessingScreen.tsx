@@ -21,7 +21,7 @@ export default function ProcessingScreen() {
       return;
     }
 
-    const worker = new Worker(new URL('../workers/analysis.worker.ts', import.meta.url), { type: 'module' });
+    const worker = new Worker(new URL('../workers/analysis.worker.ts', import.meta.url));
     workerRef.current = worker;
 
     worker.onmessage = async (event: MessageEvent<{ type: string; result?: AnalysisResult; message?: string }>) => {

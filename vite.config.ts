@@ -21,7 +21,7 @@ export default defineConfig({
       }
     })
   ],
-  worker: { format: 'es' },
+  worker: { format: 'iife' },
   resolve: { alias: { '@': '/src' } },
   server: { https: false }
 });
