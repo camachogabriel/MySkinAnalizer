@@ -1,0 +1,92 @@
+/* MySkinAnalyzer — tema visual base (clínico pero amigable) */
+:root {
+  --msa-primary: #0F766E;
+  --msa-primary-light: #5EEAD4;
+  --msa-bg: #F8FAFC;
+  --msa-surface: #FFFFFF;
+  --msa-text: #0F172A;
+  --msa-text-secondary: #64748B;
+  --msa-warning: #F59E0B;
+  --msa-error: #DC2626;
+  --msa-success: #16A34A;
+  --msa-radius: 16px;
+  --msa-radius-lg: 24px;
+  font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: var(--msa-bg);
+  color: var(--msa-text);
+}
+
+.msa-screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.msa-button-primary {
+  background: var(--msa-primary);
+  color: white;
+  border: none;
+  border-radius: var(--msa-radius);
+  padding: 16px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 56px;
+}
+
+.msa-button-primary:disabled {
+  background: #94A3B8;
+  cursor: not-allowed;
+}
+
+.msa-button-secondary {
+  background: transparent;
+  color: var(--msa-primary);
+  border: 2px solid var(--msa-primary);
+  border-radius: var(--msa-radius);
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 52px;
+}
+
+.msa-card {
+  background: var(--msa-surface);
+  border-radius: var(--msa-radius);
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.msa-disclaimer {
+  font-size: 12px;
+  color: var(--msa-text-secondary);
+  line-height: 1.5;
+  text-align: center;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.msa-status-banner {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.85);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
