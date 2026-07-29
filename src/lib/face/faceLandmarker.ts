@@ -17,7 +17,7 @@ export async function getFaceLandmarker(): Promise<FaceLandmarker> {
     baseOptions: {
       // Modelo servido localmente en producción (ver public/models/README.md);
       // durante desarrollo se puede apuntar temporalmente al CDN de MediaPipe.
-      modelAssetPath: '/models/face_landmarker.task',
+      modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
       delegate: 'GPU'
     },
     runningMode: 'VIDEO',
