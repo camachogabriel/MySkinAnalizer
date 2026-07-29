@@ -6,7 +6,7 @@ import './styles/theme.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/MySkinAnalizer/">
       <App />
     </BrowserRouter>
   </React.StrictMode>
