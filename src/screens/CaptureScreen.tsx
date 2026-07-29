@@ -24,7 +24,11 @@ const AUTO_CAPTURE_HOLD_MS = 1200;
 
 export default function CaptureScreen() {
   const navigate = useNavigate();
-  const { videoRef, isReady, error, startCamera, stopCamera } = useCamera('user');
+  // Por defecto usamos la cámara trasera/principal (mejor calidad de imagen
+  // que la selfie en la gran mayoría de teléfonos). El botón de la esquina
+  // permite cambiar a la selfie para fotos personales si se prefiere.
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const { videoRef, isReady, error, startCamera, stopCamera } = useCamera(facingMode);
   const [stepIndex, setStepIndex] = useState(0);
   const [message, setMessage] = useState('Buscando rostro...');
   const [ready, setReady] = useState(false);
@@ -35,20 +39,21 @@ export default function CaptureScreen() {
   const holdStartRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const capturingRef = useRef(false);
-  // Guarda el último frame de landmarks sin pasar por React state, para que
-  // captureCurrentPhoto no dependa de "landmarks" y el efecto de detección no
-  // se reinicie en cada frame (antes se recreaba ~60 veces por segundo).
   const landmarksRef = useRef<NormalizedLandmark[] | null>(null);
   const stepRef = useRef(STEPS[0]);
   stepRef.current = STEPS[stepIndex];
 
   const currentStep = STEPS[stepIndex];
+  const mirror = facingMode === 'user';
 
+  // Se reinicia el stream cada vez que cambia facingMode (incluida la
+  // primera vez, al montar). stopCamera limpia el stream anterior antes de
+  // pedir el nuevo, así no quedan dos cámaras activas a la vez.
   useEffect(() => {
     startCamera();
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [facingMode]);
 
   const captureCurrentPhoto = useCallback(async () => {
     if (!videoRef.current || capturingRef.current) return;
@@ -65,7 +70,7 @@ export default function CaptureScreen() {
       landmarks: landmarksRef.current ?? [],
       lightingScore: Math.max(0, Math.min(1, (luma.mean - 70) / (210 - 70))),
       sharpnessScore: Math.max(0, Math.min(1, sharpness / 400)),
-      faceCoverageScore: 0.8, // aproximación MVP; se refina con el bounding box real
+      faceCoverageScore: 0.8,
       previewUrl: bitmap ? canvasFromBitmapUrl(bitmap) : ''
     });
 
@@ -102,7 +107,7 @@ export default function CaptureScreen() {
             else if (performance.now() - holdStartRef.current >= AUTO_CAPTURE_HOLD_MS) {
               holdStartRef.current = null;
               captureCurrentPhoto();
-              return; // detiene el loop hasta que se decida repetir/continuar
+              return;
             }
           } else {
             holdStartRef.current = null;
@@ -128,8 +133,6 @@ export default function CaptureScreen() {
   const handleContinue = () => {
     setPreviewUrl(null);
     holdStartRef.current = null;
-    // Limpiamos el estado visual para no mostrar el óvalo/mensaje del paso
-    // anterior mientras arranca la detección del nuevo paso.
     setLandmarks(null);
     landmarksRef.current = null;
     setReady(false);
@@ -143,19 +146,52 @@ export default function CaptureScreen() {
     }
   };
 
+  const toggleCamera = () => {
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
+  };
+
   return (
     <div className="msa-screen">
       <ProgressSteps currentStep={stepIndex + 1} totalSteps={STEPS.length} stepLabel={currentStep.label} />
 
       {error && <p style={{ color: 'var(--msa-error)' }}>{error}</p>}
 
-      {/* El bloque de cámara se queda montado siempre (solo se oculta con
-          CSS durante la vista previa) para que el <video> nunca pierda el
-          stream de la cámara al cambiar de paso. */}
       <div style={{ position: 'relative', display: previewUrl ? 'none' : 'block' }}>
-        <CameraView ref={videoRef} isReady={isReady} />
-        <FaceGuideOverlay width={videoSize.width} height={videoSize.height} landmarks={landmarks} isValidPosition={ready} />
+        <CameraView ref={videoRef} isReady={isReady} mirror={mirror} />
+        <FaceGuideOverlay width={videoSize.width} height={videoSize.height} landmarks={landmarks} isValidPosition={ready} mirror={mirror} />
         <CaptureStatusBanner message={message} ready={ready} />
+
+        <button
+          onClick={toggleCamera}
+          aria-label={facingMode === 'environment' ? 'Cambiar a cámara selfie' : 'Cambiar a cámara trasera'}
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            border: 'none',
+            background: 'rgba(15,23,42,0.65)',
+            color: 'white',
+            fontSize: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 1l4 4-4 4" />
+            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+            <path d="M7 23l-4-4 4-4" />
+            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+          </svg>
+        </button>
+
+        <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(15,23,42,0.65)', color: 'white', fontSize: 12, padding: '4px 10px', borderRadius: 999 }}>
+          {facingMode === 'environment' ? 'Cámara trasera' : 'Cámara selfie'}
+        </div>
       </div>
 
       {previewUrl && (
