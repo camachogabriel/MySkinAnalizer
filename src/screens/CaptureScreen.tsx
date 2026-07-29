@@ -35,6 +35,12 @@ export default function CaptureScreen() {
   const holdStartRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const capturingRef = useRef(false);
+  // Guarda el último frame de landmarks sin pasar por React state, para que
+  // captureCurrentPhoto no dependa de "landmarks" y el efecto de detección no
+  // se reinicie en cada frame (antes se recreaba ~60 veces por segundo).
+  const landmarksRef = useRef<NormalizedLandmark[] | null>(null);
+  const stepRef = useRef(STEPS[0]);
+  stepRef.current = STEPS[stepIndex];
 
   const currentStep = STEPS[stepIndex];
 
@@ -54,9 +60,9 @@ export default function CaptureScreen() {
     const sharpness = computeSharpnessEstimate(lowRes);
 
     sessionDraft.addPhoto({
-      angle: currentStep.angle,
+      angle: stepRef.current.angle,
       bitmap,
-      landmarks: landmarks ?? [],
+      landmarks: landmarksRef.current ?? [],
       lightingScore: Math.max(0, Math.min(1, (luma.mean - 70) / (210 - 70))),
       sharpnessScore: Math.max(0, Math.min(1, sharpness / 400)),
       faceCoverageScore: 0.8, // aproximación MVP; se refina con el bounding box real
@@ -65,7 +71,7 @@ export default function CaptureScreen() {
 
     setPreviewUrl(canvasFromBitmapUrl(bitmap));
     capturingRef.current = false;
-  }, [currentStep, landmarks, videoRef]);
+  }, [videoRef]);
 
   useEffect(() => {
     if (!isReady || previewUrl) return;
@@ -88,7 +94,8 @@ export default function CaptureScreen() {
           const state = evaluateFacePosition(result.faceLandmarks ?? [], luma, sharpness);
           setMessage(state.message);
           setReady(state.readyToCapture);
-          setLandmarks(result.faceLandmarks?.[0] ?? null);
+          landmarksRef.current = result.faceLandmarks?.[0] ?? null;
+          setLandmarks(landmarksRef.current);
 
           if (state.readyToCapture) {
             if (holdStartRef.current === null) holdStartRef.current = performance.now();
@@ -121,6 +128,13 @@ export default function CaptureScreen() {
   const handleContinue = () => {
     setPreviewUrl(null);
     holdStartRef.current = null;
+    // Limpiamos el estado visual para no mostrar el óvalo/mensaje del paso
+    // anterior mientras arranca la detección del nuevo paso.
+    setLandmarks(null);
+    landmarksRef.current = null;
+    setReady(false);
+    setMessage('Buscando rostro...');
+
     if (stepIndex < STEPS.length - 1) {
       setStepIndex(stepIndex + 1);
     } else {
@@ -135,13 +149,16 @@ export default function CaptureScreen() {
 
       {error && <p style={{ color: 'var(--msa-error)' }}>{error}</p>}
 
-      {!previewUrl ? (
-        <div style={{ position: 'relative' }}>
-          <CameraView ref={videoRef} isReady={isReady} />
-          <FaceGuideOverlay width={videoSize.width} height={videoSize.height} landmarks={landmarks} isValidPosition={ready} />
-          <CaptureStatusBanner message={message} ready={ready} />
-        </div>
-      ) : (
+      {/* El bloque de cámara se queda montado siempre (solo se oculta con
+          CSS durante la vista previa) para que el <video> nunca pierda el
+          stream de la cámara al cambiar de paso. */}
+      <div style={{ position: 'relative', display: previewUrl ? 'none' : 'block' }}>
+        <CameraView ref={videoRef} isReady={isReady} />
+        <FaceGuideOverlay width={videoSize.width} height={videoSize.height} landmarks={landmarks} isValidPosition={ready} />
+        <CaptureStatusBanner message={message} ready={ready} />
+      </div>
+
+      {previewUrl && (
         <div>
           <img src={previewUrl} alt="Vista previa" style={{ width: '100%', borderRadius: 16 }} />
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
